@@ -19,6 +19,19 @@ android {
         vectorDrawables { useSupportLibrary = true }
     }
 
+    signingConfigs {
+        create("release") {
+            val storePath = providers.gradleProperty("releaseStoreFile").orNull
+            if (storePath != null) {
+                storeFile = file(storePath)
+                storePassword = providers.gradleProperty("releaseStorePassword").orNull
+                keyAlias = providers.gradleProperty("releaseKeyAlias").orNull
+                keyPassword = providers.gradleProperty("releaseKeyPassword").orNull
+            }
+        }
+    }
+
+    val releaseStorePath = providers.gradleProperty("releaseStoreFile").orNull
     buildTypes {
         release {
             isMinifyEnabled = true
@@ -27,8 +40,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            // Release signing is supplied by GitHub Actions through secrets.
-            // Without secrets, the release build remains intentionally unsigned.
+            if (releaseStorePath != null) signingConfig = signingConfigs.getByName("release")
         }
     }
 
@@ -49,6 +61,8 @@ android {
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.lifecycle.runtime.compose)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
