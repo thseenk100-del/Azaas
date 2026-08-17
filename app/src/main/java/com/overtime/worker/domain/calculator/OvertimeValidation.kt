@@ -6,7 +6,7 @@ import com.overtime.worker.domain.model.OvertimeCalculationInput
 import java.math.BigDecimal
 
 class OvertimeValidation {
-    fun validate(input: OvertimeCalculationInput): List<String> = buildList {
+    fun validate(input: OvertimeCalculationInput, defaultDays: BigDecimal = BigDecimal("30"), defaultHours: BigDecimal = BigDecimal("8")): List<String> = buildList {
         if (!input.overtimeEnd.isAfter(input.overtimeStart)) add("يجب أن تكون نهاية الإضافي بعد بدايته")
         if (input.overtimeMultiplier <= BigDecimal.ZERO) add("معامل الإضافي يجب أن يكون أكبر من صفر")
         if (input.currency != input.methodInput.currency()) add("يجب توحيد العملة داخل العملية")
@@ -21,8 +21,8 @@ class OvertimeValidation {
                 if (salary == null) add("أدخل بيانات الراتب")
                 else {
                     if (salary.monthlySalary.amount <= BigDecimal.ZERO) add("الراتب الشهري يجب أن يكون أكبر من صفر")
-                    if (salary.workingDaysPerMonth <= BigDecimal.ZERO) add("أيام العمل الشهرية يجب أن تكون أكبر من صفر")
-                    if (salary.workingHoursPerDay <= BigDecimal.ZERO) add("ساعات العمل اليومية يجب أن تكون أكبر من صفر")
+                    if ((salary.workingDaysPerMonth ?: defaultDays) <= BigDecimal.ZERO) add("أيام العمل الشهرية يجب أن تكون أكبر من صفر")
+                    if ((salary.workingHoursPerDay ?: defaultHours) <= BigDecimal.ZERO) add("ساعات العمل اليومية يجب أن تكون أكبر من صفر")
                 }
             }
         }

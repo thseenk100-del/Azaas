@@ -40,7 +40,9 @@ class OvertimeViewModel(application: Application) : AndroidViewModel(application
     fun setMonth(value: String) { month.value = value }
 
     fun calculate(input: OvertimeCalculationInput, onSaved: (OvertimeRecord) -> Unit = {}) {
-        calculator.calculate(input).onSuccess { result ->
+        val activeSettings = settings.value
+        val activePolicy = com.overtime.worker.domain.model.CalculationPolicy(currency = activeSettings.currency, defaultWorkingDaysPerMonth = activeSettings.workingDaysPerMonth, defaultWorkingHoursPerDay = activeSettings.workingHoursPerDay)
+        calculator.calculate(input, activePolicy).onSuccess { result ->
             _error.value = null; _lastResult.value = result
             viewModelScope.launch {
                 val record = OvertimeRecord(
@@ -51,8 +53,8 @@ class OvertimeViewModel(application: Application) : AndroidViewModel(application
                     overtimeHours = result.overtimeHours,
                     hourlyRate = if (input.methodInput is com.overtime.worker.domain.model.CalculationMethodInput.HourlyRate) input.methodInput.hourlyRate else null,
                     monthlySalary = if (input.methodInput is com.overtime.worker.domain.model.CalculationMethodInput.SalaryBased) input.methodInput.monthlySalary else null,
-                    workingDaysPerMonth = if (input.methodInput is com.overtime.worker.domain.model.CalculationMethodInput.SalaryBased) input.methodInput.workingDaysPerMonth else null,
-                    workingHoursPerDay = if (input.methodInput is com.overtime.worker.domain.model.CalculationMethodInput.SalaryBased) input.methodInput.workingHoursPerDay else null,
+                    workingDaysPerMonth = if (input.methodInput is com.overtime.worker.domain.model.CalculationMethodInput.SalaryBased) (input.methodInput.workingDaysPerMonth ?: activePolicy.defaultWorkingDaysPerMonth) else null,
+                    workingHoursPerDay = if (input.methodInput is com.overtime.worker.domain.model.CalculationMethodInput.SalaryBased) (input.methodInput.workingHoursPerDay ?: activePolicy.defaultWorkingHoursPerDay) else null,
                     overtimeMultiplier = result.overtimeMultiplier,
                     overtimePay = result.overtimePay,
                     currency = input.currency

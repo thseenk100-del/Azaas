@@ -15,11 +15,11 @@ object BackupManager {
         val array = JSONArray()
         records.forEach { record -> array.put(JSONObject().apply {
             put("id", record.id); put("calculationMethod", record.calculationMethod.name); put("date", record.date)
-            put("overtimeStart", record.overtimeStart.toString()); put("overtimeEnd", record.overtimeEnd.toString())
+            record.overtimeStart?.let { put("overtimeStart", it.toString()) }; record.overtimeEnd?.let { put("overtimeEnd", it.toString()) }
             put("overtimeHours", record.overtimeHours.toPlainString()); put("hourlyRate", record.hourlyRate?.amount?.toPlainString())
             put("monthlySalary", record.monthlySalary?.amount?.toPlainString()); put("workingDaysPerMonth", record.workingDaysPerMonth?.toPlainString())
             put("workingHoursPerDay", record.workingHoursPerDay?.toPlainString()); put("multiplier", record.overtimeMultiplier.toPlainString())
-            put("overtimePay", record.overtimePay.amount.toPlainString()); put("currency", record.currency.value); put("notes", record.notes)
+            put("overtimePay", record.overtimePay.amount.toPlainString()); put("currency", record.currency.value); put("legacyTiming", record.legacyTiming); put("notes", record.notes)
             put("createdAt", record.createdAt); put("updatedAt", record.updatedAt)
         }) }
         return root.put("records", array).toString(2)
@@ -34,13 +34,13 @@ object BackupManager {
                 val item = array.getJSONObject(i); val currency = CurrencyCode(item.optString("currency", "YER"))
                 add(OvertimeRecord(
                     id = item.getString("id"), calculationMethod = CalculationMethod.valueOf(item.getString("calculationMethod")), date = item.getString("date"),
-                    overtimeStart = LocalDateTime.parse(item.getString("overtimeStart")), overtimeEnd = LocalDateTime.parse(item.getString("overtimeEnd")),
+                    overtimeStart = item.optString("overtimeStart", "").takeIf(String::isNotBlank)?.let(LocalDateTime::parse), overtimeEnd = item.optString("overtimeEnd", "").takeIf(String::isNotBlank)?.let(LocalDateTime::parse),
                     overtimeHours = BigDecimal(item.getString("overtimeHours")), hourlyRate = item.optString("hourlyRate", "").takeIf(String::isNotBlank)?.let { Money(BigDecimal(it), currency) },
                     monthlySalary = item.optString("monthlySalary", "").takeIf(String::isNotBlank)?.let { Money(BigDecimal(it), currency) },
                     workingDaysPerMonth = item.optString("workingDaysPerMonth", "").takeIf(String::isNotBlank)?.let(::BigDecimal),
                     workingHoursPerDay = item.optString("workingHoursPerDay", "").takeIf(String::isNotBlank)?.let(::BigDecimal),
                     overtimeMultiplier = BigDecimal(item.getString("multiplier")), overtimePay = Money(BigDecimal(item.getString("overtimePay")), currency),
-                    currency = currency, notes = item.optString("notes"), createdAt = item.optLong("createdAt"), updatedAt = item.optLong("updatedAt")
+                    currency = currency, notes = item.optString("notes"), legacyTiming = item.optBoolean("legacyTiming", false), createdAt = item.optLong("createdAt"), updatedAt = item.optLong("updatedAt")
                 ))
             }
         }
