@@ -2,28 +2,30 @@ package com.overtime.worker.domain.calculator
 
 import com.overtime.worker.domain.model.OvertimeInput
 import com.overtime.worker.domain.model.OvertimeResult
-import kotlin.math.round
+import java.math.BigDecimal
+import java.math.RoundingMode
 
 class OvertimeCalculator {
     fun calculate(input: OvertimeInput): Result<OvertimeResult> {
-        if (input.hourlyRate < 0 || input.regularHours < 0 || input.overtimeHours < 0 ||
-            input.overtimeMultiplier < 0 || input.allowance < 0 || input.deductions < 0
-        ) return Result.failure(IllegalArgumentException("لا يمكن استخدام قيم سالبة"))
+        val values = listOf(input.hourlyRate, input.regularHours, input.overtimeHours, input.overtimeMultiplier, input.allowance, input.deductions)
+        if (values.any { !it.isFinite() || it < 0.0 }) return Result.failure(IllegalArgumentException("أدخل قيمًا موجبة وصحيحة"))
 
-        val regularPay = input.hourlyRate * input.regularHours
-        val overtimePay = input.hourlyRate * input.overtimeHours * input.overtimeMultiplier
-        val grossPay = regularPay + overtimePay + input.allowance
-        val netPay = (grossPay - input.deductions).coerceAtLeast(0.0)
+        val rate = input.hourlyRate.bd()
+        val regularPay = rate.multiply(input.regularHours.bd())
+        val overtimePay = rate.multiply(input.overtimeHours.bd()).multiply(input.overtimeMultiplier.bd())
+        val grossPay = regularPay.add(overtimePay).add(input.allowance.bd())
+        val netPay = grossPay.subtract(input.deductions.bd()).max(BigDecimal.ZERO)
 
         return Result.success(
             OvertimeResult(
-                regularPay = regularPay.roundMoney(),
-                overtimePay = overtimePay.roundMoney(),
-                grossPay = grossPay.roundMoney(),
-                netPay = netPay.roundMoney()
+                regularPay = regularPay.money(),
+                overtimePay = overtimePay.money(),
+                grossPay = grossPay.money(),
+                netPay = netPay.money()
             )
         )
     }
 
-    private fun Double.roundMoney(): Double = round(this * 100) / 100
+    private fun Double.bd() = BigDecimal.valueOf(this)
+    private fun BigDecimal.money(): Double = setScale(2, RoundingMode.HALF_UP).toDouble()
 }

@@ -22,11 +22,15 @@ data class OvertimeResult(
 data class CalculationRecord(
     val id: String = UUID.randomUUID().toString(),
     val date: String = LocalDate.now().toString(),
+    val note: String = "",
     val input: OvertimeInput,
     val result: OvertimeResult
 )
 
 data class AppSettings(
     val defaultMultiplier: Double = 1.5,
-    val currency: String = "ر.س"
+    val currency: String = "ر.س",
+    val standardDailyHours: Double = 8.0,
+    val defaultHourlyRate: Double = 0.0,
+    val employeeName: String = ""
 )

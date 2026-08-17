@@ -1,0 +1,21 @@
+# Gradle
+.gradle/
+build/
+**/build/
+
+# Local configuration
+local.properties
+
+# Signing material - never commit private keys or passwords
+*.jks
+*.keystore
+*.p12
+*.pfx
+
+# Generated Room schemas
+app/schemas/
+
+# IDE
+.idea/
+*.iml
+.DS_Store
