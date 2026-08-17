@@ -10,13 +10,13 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface WorkRecordDao {
-    @Query("SELECT * FROM work_records ORDER BY workDate DESC")
+    @Query("SELECT * FROM overtime_records ORDER BY date DESC, overtimeStart DESC")
     fun observeAll(): Flow<List<WorkRecordEntity>>
 
-    @Query("SELECT * FROM work_records WHERE workDate LIKE :month || '%' ORDER BY workDate DESC")
+    @Query("SELECT * FROM overtime_records WHERE date LIKE :month || '%' ORDER BY date DESC, overtimeStart DESC")
     fun observeMonth(month: String): Flow<List<WorkRecordEntity>>
 
-    @Query("SELECT * FROM work_records WHERE workDate LIKE :month || '%' AND (note LIKE '%' || :query || '%' OR workDate LIKE '%' || :query || '%') ORDER BY workDate DESC")
+    @Query("SELECT * FROM overtime_records WHERE date LIKE :month || '%' AND (notes LIKE '%' || :query || '%' OR date LIKE '%' || :query || '%') ORDER BY date DESC, overtimeStart DESC")
     fun searchMonth(month: String, query: String): Flow<List<WorkRecordEntity>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -28,10 +28,10 @@ interface WorkRecordDao {
     @Delete
     suspend fun delete(record: WorkRecordEntity)
 
-    @Query("DELETE FROM work_records")
+    @Query("DELETE FROM overtime_records")
     suspend fun deleteAll()
 
-    @Query("SELECT * FROM work_records ORDER BY workDate DESC")
+    @Query("SELECT * FROM overtime_records ORDER BY date DESC, overtimeStart DESC")
     suspend fun snapshot(): List<WorkRecordEntity>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)

@@ -2,63 +2,73 @@ package com.overtime.worker.data.local
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import com.overtime.worker.domain.model.CalculationRecord
-import com.overtime.worker.domain.model.OvertimeInput
-import com.overtime.worker.domain.model.OvertimeResult
+import com.overtime.worker.domain.model.CalculationMethod
+import com.overtime.worker.domain.model.CalculationMethodInput
+import com.overtime.worker.domain.model.CurrencyCode
+import com.overtime.worker.domain.model.Money
+import com.overtime.worker.domain.model.OvertimeRecord
+import java.math.BigDecimal
+import java.time.LocalDateTime
 
-@Entity(tableName = "work_records")
+@Entity(tableName = "overtime_records")
 data class WorkRecordEntity(
     @PrimaryKey val id: String,
-    val workDate: String,
-    val note: String,
-    val hourlyRateCents: Long,
-    val regularHours: Double,
-    val overtimeHours: Double,
-    val multiplier: Double,
-    val allowanceCents: Long,
-    val deductionCents: Long,
-    val regularPayCents: Long,
-    val overtimePayCents: Long,
-    val grossPayCents: Long,
-    val netPayCents: Long
+    val calculationMethod: String,
+    val date: String,
+    val overtimeStart: String,
+    val overtimeEnd: String,
+    val overtimeHours: String,
+    val hourlyRateAmount: String?,
+    val monthlySalaryAmount: String?,
+    val workingDaysPerMonth: String?,
+    val workingHoursPerDay: String?,
+    val overtimeMultiplier: String,
+    val overtimePayAmount: String,
+    val currencyCode: String,
+    val notes: String,
+    val createdAt: Long,
+    val updatedAt: Long
 ) {
-    fun toDomain() = CalculationRecord(
-        id = id,
-        date = workDate,
-        note = note,
-        input = OvertimeInput(
-            hourlyRate = hourlyRateCents / 100.0,
-            regularHours = regularHours,
-            overtimeHours = overtimeHours,
-            overtimeMultiplier = multiplier,
-            allowance = allowanceCents / 100.0,
-            deductions = deductionCents / 100.0
-        ),
-        result = OvertimeResult(
-            regularPay = regularPayCents / 100.0,
-            overtimePay = overtimePayCents / 100.0,
-            grossPay = grossPayCents / 100.0,
-            netPay = netPayCents / 100.0
+    fun toDomain(): OvertimeRecord {
+        val currency = CurrencyCode(currencyCode)
+        return OvertimeRecord(
+            id = id,
+            calculationMethod = CalculationMethod.valueOf(calculationMethod),
+            date = date,
+            overtimeStart = LocalDateTime.parse(overtimeStart),
+            overtimeEnd = LocalDateTime.parse(overtimeEnd),
+            overtimeHours = BigDecimal(overtimeHours),
+            hourlyRate = hourlyRateAmount?.let { Money(BigDecimal(it), currency) },
+            monthlySalary = monthlySalaryAmount?.let { Money(BigDecimal(it), currency) },
+            workingDaysPerMonth = workingDaysPerMonth?.let(::BigDecimal),
+            workingHoursPerDay = workingHoursPerDay?.let(::BigDecimal),
+            overtimeMultiplier = BigDecimal(overtimeMultiplier),
+            overtimePay = Money(BigDecimal(overtimePayAmount), currency),
+            currency = currency,
+            notes = notes,
+            createdAt = createdAt,
+            updatedAt = updatedAt
         )
-    )
+    }
 
     companion object {
-        fun fromDomain(record: CalculationRecord) = WorkRecordEntity(
+        fun fromDomain(record: OvertimeRecord) = WorkRecordEntity(
             id = record.id,
-            workDate = record.date,
-            note = record.note,
-            hourlyRateCents = record.input.hourlyRate.toCents(),
-            regularHours = record.input.regularHours,
-            overtimeHours = record.input.overtimeHours,
-            multiplier = record.input.overtimeMultiplier,
-            allowanceCents = record.input.allowance.toCents(),
-            deductionCents = record.input.deductions.toCents(),
-            regularPayCents = record.result.regularPay.toCents(),
-            overtimePayCents = record.result.overtimePay.toCents(),
-            grossPayCents = record.result.grossPay.toCents(),
-            netPayCents = record.result.netPay.toCents()
+            calculationMethod = record.calculationMethod.name,
+            date = record.date,
+            overtimeStart = record.overtimeStart.toString(),
+            overtimeEnd = record.overtimeEnd.toString(),
+            overtimeHours = record.overtimeHours.toPlainString(),
+            hourlyRateAmount = record.hourlyRate?.amount?.toPlainString(),
+            monthlySalaryAmount = record.monthlySalary?.amount?.toPlainString(),
+            workingDaysPerMonth = record.workingDaysPerMonth?.toPlainString(),
+            workingHoursPerDay = record.workingHoursPerDay?.toPlainString(),
+            overtimeMultiplier = record.overtimeMultiplier.toPlainString(),
+            overtimePayAmount = record.overtimePay.amount.toPlainString(),
+            currencyCode = record.currency.value,
+            notes = record.notes,
+            createdAt = record.createdAt,
+            updatedAt = record.updatedAt
         )
     }
 }
-
-private fun Double.toCents(): Long = java.math.BigDecimal.valueOf(this).movePointRight(2).setScale(0, java.math.RoundingMode.HALF_UP).longValueExact()
