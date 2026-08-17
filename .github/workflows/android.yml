@@ -38,23 +38,25 @@ jobs:
       - name: Make Gradle executable
         run: chmod +x ./gradlew
 
-      - name: Build Debug APK
-        run: ./gradlew --no-daemon assembleDebug
-
-      - name: Upload Debug APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: overtime-worker-debug-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
-          if-no-files-found: error
-
-      - name: Build unsigned Release APK
-        if: ${{ env.RELEASE_KEYSTORE_BASE64 == '' }}
-        run: ./gradlew --no-daemon assembleRelease
-
-      - name: Build signed Release APK
-        if: ${{ env.RELEASE_KEYSTORE_BASE64 != '' }}
+      - name: Verify release signing secrets
+        shell: bash
         run: |
+          set -euo pipefail
+          missing=0
+          for name in RELEASE_KEYSTORE_BASE64 STORE_PASSWORD KEY_ALIAS KEY_PASSWORD; do
+            if [[ -z "${!name:-}" ]]; then
+              echo "Missing required GitHub Actions secret: $name"
+              missing=1
+            fi
+          done
+          if [[ "$missing" -ne 0 ]]; then
+            echo "Release build stopped: signing secrets are required; unsigned APK is not accepted."
+            exit 1
+          fi
+
+      - name: Build Release APK
+        run: |
+          set -euo pipefail
           echo "$RELEASE_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/release.keystore"
           ./gradlew --no-daemon assembleRelease \
             -PreleaseStoreFile="$RUNNER_TEMP/release.keystore" \
@@ -62,9 +64,12 @@ jobs:
             -PreleaseKeyAlias="$KEY_ALIAS" \
             -PreleaseKeyPassword="$KEY_PASSWORD"
 
+      - name: Verify Release APK output
+        run: test -s app/build/outputs/apk/release/app-release.apk
+
       - name: Upload Release APK
         uses: actions/upload-artifact@v4
         with:
-          name: overtime-worker-release-apk
+          name: كيف-حسبت-release-apk
           path: app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
